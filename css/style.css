@@ -2,16 +2,20 @@
   display: flex;
   justify-content: space-around;
 }
+
 .btn {
   cursor: pointer;
 }
+
 .grid-wrapper {
     border: 1px solid grey;
 }
+
 .flex-container {
   display: flex;
   justify-content: center;
 }
+
 .cell {
   width: 30px;
   height: 30px;
@@ -20,12 +24,15 @@
   background: blue;
   text-align: center;
 }
+
 .cur-cell {
   background: yellow;
 }
+
 .comp-win {
   background: red;
 }
+
 .player-win {
   background: green;
 }

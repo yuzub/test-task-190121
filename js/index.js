@@ -1,135 +1,161 @@
-// 10 x 10 cells - dynamically
-// modal window body ???
-// refactor code - some duplicate presents
-let cellsInRow = 10,
-  range = cellsInRow * cellsInRow,
-  // range = 20,
-  timems = 0,
-  scores = resetScores();
+(function () {
+  "use strict";
+  let cellsInRow = 10,
+    range = cellsInRow * cellsInRow,
+    timems = 0,
+    scores = resetScores();
 
-const startBtn = document.querySelector('#start');
+  // generate cells for game
+  generateGameGrid(cellsInRow);
 
-const spanScores = document.querySelector('#scores');
-displayScores(spanScores);
+  // control elements
+  const startBtn = document.querySelector("#start");
+  const spanScores = document.querySelector("#scores");
+  const cells = document.querySelectorAll(".cell");
+  //  modal window elements
+  const modal = document.querySelector("#modalWindow");
+  const span = document.querySelector(".close");
 
-const cells = document.querySelectorAll('.cell');
-// cells.forEach((cell, ind) => {
-//   cell.innerHTML = ind + 1;
-// });
+  displayScores(spanScores);
 
-startBtn.addEventListener('click', function(e) {
-  scores = resetScores();
-  resetCells();
+  // polyfill for Number.isInteger()
+  Number.isInteger =
+    Number.isInteger ||
+    function (value) {
+      return (
+        typeof value === "number" && Number.isFinite(value) && !(value % 1)
+      );
+    };
 
-  timems = Number(document.querySelector('#time').value);
-  if (timems <= 0 || !Number.isInteger(timems)) {
-    displayModal(`wrong input: time = ${timems}`);
-  } else {
-    startBtn.setAttribute('disabled', 'disabled');
-    runPlay();
-  }
-
-});
-
-function runPlay() {
-  let curCell,
-    timerId,
-    usedCells = [];
-  
-  nextStep();
-  
-  function nextStep() {
-    let index;
-    
-    while (true) {
-      index = getRandomInt(range);
-      if (usedCells.indexOf(index) === -1) {
-        usedCells.push(index);
-        break;
-      }
+  startBtn.addEventListener("click", function (e) {
+    //  reset game
+    scores = resetScores();
+    displayScores(spanScores);
+    resetCells();
+    //  check input data
+    timems = Number(document.querySelector("#time").value);
+    if (timems <= 0 || !Number.isInteger(timems)) {
+      displayModal(`Wrong input:`, `time = ${timems}`);
+    } else {
+      startBtn.setAttribute("disabled", "disabled");
+      //  run game
+      runPlay();
     }
-    curCell = cells[index];
-    curCell.classList.add('cur-cell');
-  
-    timerId = setTimeout(function go() {
-      
-      curCell.classList.add('comp-win');
-      scores.comp += 1;
+  });
+
+  // -----------  runPlay()  ---------------
+  function runPlay() {
+    let curCell,
+      timerId,
+      usedCells = [];
+
+    nextStep();
+
+    // -----------  one step of game  ------------------
+    function nextStep() {
+      //  index of random cell
+      let index;
+
+      //  check for repeating of random cells
+      while (true) {
+        index = getRandomInt(range);
+        if (usedCells.indexOf(index) === -1) {
+          usedCells.push(index);
+          break;
+        }
+      }
+      curCell = cells[index];
+      curCell.classList.add("cur-cell");
+
+      timerId = setTimeout(function go() {
+        changeScore("comp");
+      }, timems);
+      curCell.addEventListener("click", handleClick);
+    }
+
+    // -----------  handle player click on cell  ------------------
+    function handleClick(e) {
+      clearTimeout(timerId);
+      changeScore("player");
+    }
+
+    // -----------  change score of comp or player  ------------------
+    function changeScore(winner) {
+      curCell.classList.add(`${winner}-win`);
+      scores[winner] += 1;
       displayScores(spanScores);
-      curCell.removeEventListener('click', handleClick);
-      
+      curCell.removeEventListener("click", handleClick);
+
       if (scores.player < 10 && scores.comp < 10) {
         nextStep();
       } else {
-        displayModal('game over! comp win!');
-        startBtn.removeAttribute('disabled');
+        const modalMsg =
+          winner === "comp" ? "Computer win!" : "You are WINNER!";
+        displayModal("Game over!", modalMsg);
+        startBtn.removeAttribute("disabled");
       }
-    }, timems);
-    curCell.addEventListener('click', handleClick);    
-  }
-  
-  function handleClick(e) {
-    clearTimeout(timerId);
-    
-    curCell.classList.add('player-win');
-    scores.player += 1;
-    displayScores(spanScores);
-    curCell.removeEventListener('click', handleClick);
-
-    if (scores.player < 10 && scores.comp < 10) {
-      nextStep();
-    } else {
-      displayModal('game over! player win!');
-      startBtn.removeAttribute('disabled');
     }
   }
-  
-}
+  // -----------  end runPlay()  ---------------
 
-function resetCells() {
-  cells.forEach(cell => {
-    cell.classList.remove('player-win', 'comp-win', 'cur-cell');
-  });
-}
-
-function resetScores() {
-  return {
-    player: 0,
-    comp: 0
+  //  reset game
+  function resetCells() {
+    cells.forEach(cell => {
+      cell.classList.remove("player-win", "comp-win", "cur-cell");
+    });
   }
-}
 
-function displayScores(element) {
-  element.innerHTML = scores.player + ' / ' + scores.comp;
-}
+  function resetScores() {
+    return {
+      player: 0,
+      comp: 0
+    };
+  }
 
-function getRandomInt(range) {
-  return Math.floor(Math.random() * range);
-}
+  // get random integer in range [0, range)
+  function getRandomInt(range) {
+    return Math.floor(Math.random() * range);
+  }
 
-Number.isInteger = Number.isInteger || function(value) {
-  return typeof value === 'number'
-         && Number.isFinite(value)
-         && !(value % 1);
-};
+  //  display scores
+  function displayScores(element) {
+    element.innerHTML = scores.player + " / " + scores.comp;
+  }
 
-// modal window
-const modal = document.querySelector('#modalWindow');
-const span = document.querySelector('.close');
+  // display modal window
+  function displayModal(header, message) {
+    const modalHeader = document.querySelector(".modal-header h2");
+    modalHeader.innerHTML = header;
+    const modalBody = document.querySelector(".modal-body p");
+    modalBody.innerHTML = message;
+    modal.style.display = "block";
+  }
 
-function displayModal(message) {
-  const modalHeader = document.querySelector('.modal-header h2');
-  modalHeader.innerHTML = message;
-  modal.style.display = 'block';
-}
+  // for close modal window
+  span.addEventListener("click", function () {
+    modal.style.display = "none";
+  });
 
-span.addEventListener('click', function() {
-  modal.style.display = 'none';
-});
+  // When the user clicks anywhere outside of the modal, close it
+  // window.onclick = function(event) {
+  //   if (event.target == modal) {
+  //     modal.style.display = 'none';
+  //   }
+  // }
 
-// When the user clicks anywhere outside of the modal, close it
-// window.onclick = function(event) {
-//   if (event.target == modal) {
-//     modal.style.display = 'none';
-//   }
-// }
+  // generate game grid
+  function generateGameGrid(divInRow) {
+    const gridWrap = document.querySelector(".grid-wrapper");
+    for (let j = 0; j < divInRow; j++) {
+      const flexContainer = document.createElement("div");
+      flexContainer.className = "flex-container";
+
+      for (let i = 0; i < divInRow; i++) {
+        const div = document.createElement("div");
+        div.className = "cell";
+        flexContainer.appendChild(div);
+      }
+      gridWrap.appendChild(flexContainer);
+    }
+  }
+})();
